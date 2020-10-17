@@ -104,6 +104,15 @@ WiFiManager::~WiFiManager()
 
 void WiFiManager::addParameter(WiFiManagerParameter *p)
 {
+ if(_paramsCount + 1 > WIFI_MANAGER_MAX_PARAMS)
+  {
+    //Max parameters exceeded!
+    DEBUG_WM("WIFI_MANAGER_MAX_PARAMS exceeded, increase number (in WiFiManager.h) before adding more parameters!");
+    DEBUG_WM("Skipping parameter with ID:");
+    DEBUG_WM(p->getID());
+    return;
+  }
+
   _params[_paramsCount] = p;
   _paramsCount++;
   DEBUG_WM("Adding parameter");
@@ -1047,23 +1056,19 @@ void WiFiManager::handleOffset()
   page += FPSTR(HTTP_STYLE);
   page += _customHeadElement;
 
-  if (offset.getStatus() != "done!")
-    page += F("<META HTTP-EQUIV=\"refresh\" CONTENT=\"120;url=http://192.168.4.1/\">");
   page += FPSTR(HTTP_HEADER_END);
-  page += F("<h1>calibrate Offset</h1><hr>");
-  page += F("<table>");
-  page += F("<tr><td>");
-  page += F("...calibration in progress...<br><h2>DO NOT MOVE OR SHAKE!</h2><br>It takes ~2min to complete. Once complete the iSpindel will restart and the blue LED will switch from continous to blinking");
-  // page += offset.getStatus();
-  page += F("</td></tr>");
-  page += F("</table>");
+  page += F("<META HTTP-EQUIV=\"refresh\" CONTENT=\"6;url=/iSpindel\"> \
+  <h1>calibrate Offset</h1><hr> \
+  <table><tr><td> \
+  ...calibration in progress...<br><h2>DO NOT MOVE OR SHAKE!</h2><br> \
+  It takes a few seconds to complete. Once complete the blue LED will switch from continous to blinking \
+  </td></tr></table>");
 
   page += FPSTR(HTTP_END);
 
   server->send(200, "text/html", page);
-  if (offset.getStatus() == "idle")
-    offset.calibrate();
-  ESP.reset();
+  offset.calibrate();
+  flasher.attach(1, flash);
 }
 
 /** Handle the state page */
